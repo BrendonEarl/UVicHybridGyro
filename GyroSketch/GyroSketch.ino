@@ -235,6 +235,7 @@ void loop() {
 //        Serial.print(ypr[1] * 180/M_PI);
 //        Serial.print("\t");
 //        Serial.println(ypr[2] * 180/M_PI);
+//        //separates value into two 8 bit sets for transmission by shifting the decimal point, typecasting as an integer, then shifting and ORing into 8bit int vars
 //        int8_t hiDir = ((((int) (ypr[2] * 100)) >> 8) & 0xff);
 //        int8_t loDir = ((((int) (ypr[2] * 100)) >> 0) & 0xff);
         Serial.print(q.w);
