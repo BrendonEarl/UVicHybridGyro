@@ -57,12 +57,13 @@ Data is transmitted from MPU6050 using I2C into the fifoBuffer. Data is then pul
 AFS_SEL = 1  
 LSB/g = 8192
 
-Data transmitted has had the following operations performed:  
-$\times$ 100  
-typecast from float to int  
-hi = data >> 8 //right shift 8  
-lo = data >> 0 //right shift 0  
-Both ANDed with 0xff onto 8 bit integers
+
+All data transmitted has had the following: 
+
+* mapped from original range to 0 to 65535 (16 bit range) and casted as unsigned integers.
+* hi = data >> 8 //right shift 8  
+* lo = data >> 0 //right shift 0  
+* Both ANDed with 0xff (11111111) onto 8 bit unsigned integers
 
 ####Product functions
 
@@ -137,12 +138,16 @@ Resides in MPU6050\_6Axis\_MotionApps20: Gets the quaternion coordinate values f
 
 Resides in MPU6050\_6Axis\_MotionApps20: Gets the acceleration values from the fifoBuffer and stores them in the variable __aa__ as x, y, z, where the values seem to follow the pattern:
 
-| AFS_SEL | int = #/g |
-|:-------:|:---------:|
-|    0    |   1020    |
+| AFS_SEL | int = #/g | new: |
+|:-------:|:---------:|:----:|
+|    0    |   1020    | 
 |    1    |   560     |
 |    2    |   280     |
 |    3    |   140     |	
+
+By multiplying aa by 4 in the library, the aa values more closely resemble the expected values as per the table above (and in the datasheet). 
+
+==issue:== MPU6050 can't find horizon and offsets seem to change, so currently impossible to calibrate as results are non-linear.
 
 <br>
 
@@ -161,4 +166,4 @@ Resides in MPU6050\_6Axis\_MotionApps20: Gets the Yaw, Pitch, Roll components of
 	mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
 	
 Resides in MPU6050\_6Axis\_MotionApps20: Gets 'real' acceleration (in __aaReal__) by subtracting the gravity vector in each of the x, y, z components.  
-==Issue:== aa and gravity values don't line up (aa is not multiplied by any constant, constant to multiply gravity doesn't change with AFS_SEL - constant value referred to is that found in the LSB/g column in a table above)
+==aa and gravity values should now line up== since the gravity component is now multiplied by a constant which changes based on AFS\_SEL in the library (aa is not multiplied by any constant, constant to multiply gravity doesn't change with AFS_SEL - constant value referred to is that found in the LSB/g column in a table above)

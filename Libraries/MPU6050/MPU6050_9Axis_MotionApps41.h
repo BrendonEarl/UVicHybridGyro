@@ -678,11 +678,16 @@ bool MPU6050::dmpPacketAvailable() {
 // uint8_t MPU6050::dmpSendEIS(uint_fast16_t elements, uint_fast16_t accuracy);
 
 uint8_t MPU6050::dmpGetAccel(int32_t *data, const uint8_t* packet) {
-    // TODO: accommodate different arrangements of sent data (ONLY default supported now)
+    //int AFS_SEL = getFullScaleAccelRange();
+
     if (packet == 0) packet = dmpPacketBuffer;
     data[0] = (((uint32_t)packet[34] << 24) | ((uint32_t)packet[35] << 16) | ((uint32_t)packet[36] << 8) | packet[37]);
     data[1] = (((uint32_t)packet[38] << 24) | ((uint32_t)packet[39] << 16) | ((uint32_t)packet[40] << 8) | packet[41]);
     data[2] = (((uint32_t)packet[42] << 24) | ((uint32_t)packet[43] << 16) | ((uint32_t)packet[44] << 8) | packet[45]);
+
+    data[0] *= 16;
+    data[1] *= 16;
+    data[2] *= 16;
     return 0;
 }
 uint8_t MPU6050::dmpGetAccel(int16_t *data, const uint8_t* packet) {
@@ -691,6 +696,10 @@ uint8_t MPU6050::dmpGetAccel(int16_t *data, const uint8_t* packet) {
     data[0] = (packet[34] << 8) | packet[35];
     data[1] = (packet[38] << 8) | packet[39];
     data[2] = (packet[42] << 8) | packet[43];
+
+    data[0] *= 16;
+    data[1] *= 16;
+    data[2] *= 16;
     return 0;
 }
 uint8_t MPU6050::dmpGetAccel(VectorInt16 *v, const uint8_t* packet) {
@@ -699,6 +708,10 @@ uint8_t MPU6050::dmpGetAccel(VectorInt16 *v, const uint8_t* packet) {
     v -> x = (packet[34] << 8) | packet[35];
     v -> y = (packet[38] << 8) | packet[39];
     v -> z = (packet[42] << 8) | packet[43];
+
+    v -> x *= 16;
+    v -> y *= 16;
+    v -> z *= 16;
     return 0;
 }
 uint8_t MPU6050::dmpGetQuaternion(int32_t *data, const uint8_t* packet) {
@@ -761,10 +774,11 @@ uint8_t MPU6050::dmpGetMag(int16_t *data, const uint8_t* packet) {
 // uint8_t MPU6050::dmpSetLinearAccelFilterCoefficient(float coef);
 // uint8_t MPU6050::dmpGetLinearAccel(long *data, const uint8_t* packet);
 uint8_t MPU6050::dmpGetLinearAccel(VectorInt16 *v, VectorInt16 *vRaw, VectorFloat *gravity) {
+    int AFS_SEL = getFullScaleAccelRange();
     // get rid of the gravity component (+1g = +4096 in standard DMP FIFO packet)
-    v -> x = vRaw -> x - gravity -> x*4096;
-    v -> y = vRaw -> y - gravity -> y*4096;
-    v -> z = vRaw -> z - gravity -> z*4096;
+    v -> x = vRaw -> x - gravity -> x*((float)(16384 >> AFS_SEL));
+    v -> y = vRaw -> y - gravity -> y*((float)(16384 >> AFS_SEL));
+    v -> z = vRaw -> z - gravity -> z*((float)(16384 >> AFS_SEL));
     return 0;
 }
 // uint8_t MPU6050::dmpGetLinearAccelInWorld(long *data, const uint8_t* packet);

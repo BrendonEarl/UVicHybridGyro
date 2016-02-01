@@ -13,52 +13,19 @@
 
 // I2Cdev and MPU6050 must be installed as libraries, or else the .cpp/.h files
 // for both classes must be in the include path of your project
-#include "I2Cdev.h"     //I2C communication library
 
-#include "MPU6050_6Axis_MotionApps20.h"       //MPU6050 function library
+#include <I2Cdev.h>     //I2C communication library
+#include <MPU6050_9Axis_MotionApps41.h>   //MPU6050 function library
+#include <mcp_can.h>    //CAN communication library
 
-#include "mcp_can.h"      //CAN communication library
+#define CAN_ID 0x00
 
 // class default I2C address is 0x68
 MPU6050 mpu;
+//MCP_CAN CAN(9);
 
 
-// uncomment "OUTPUT_READABLE_QUATERNION" if you want to see the actual
-// quaternion components in a [w, x, y, z] format (not best for parsing
-// on a remote host such as Processing or something though)
-//#define OUTPUT_READABLE_QUATERNION
-
-// uncomment "OUTPUT_READABLE_EULER" if you want to see Euler angles
-// (in degrees) calculated from the quaternions coming from the FIFO.
-// Note that Euler angles suffer from gimbal lock (for more info, see
-// http://en.wikipedia.org/wiki/Gimbal_lock)
-//#define OUTPUT_READABLE_EULER
-
-// uncomment "OUTPUT_READABLE_YAWPITCHROLL" if you want to see the yaw/
-// pitch/roll angles (in degrees) calculated from the quaternions coming
-// from the FIFO. Note this also requires gravity vector calculations.
-// Also note that yaw/pitch/roll angles suffer from gimbal lock (for
-// more info, see: http://en.wikipedia.org/wiki/Gimbal_lock)
-//#define OUTPUT_READABLE_YAWPITCHROLL
-
-// uncomment "OUTPUT_READABLE_REALACCEL" if you want to see acceleration
-// components with gravity removed. This acceleration reference frame is
-// not compensated for orientation, so +X is always +X according to the
-// sensor, just without the effects of gravity. If you want acceleration
-// compensated for orientation, us OUTPUT_READABLE_WORLDACCEL instead.
-//#define OUTPUT_READABLE_REALACCEL
-
-// uncomment "OUTPUT_READABLE_WORLDACCEL" if you want to see acceleration
-// components with gravity removed and adjusted for the world frame of
-// reference (yaw is relative to initial orientation, since no magnetometer
-// is present in this case). Could be quite handy in some cases.
 #define OUTPUT_READABLE_WORLDACCEL
-
-// uncomment "OUTPUT_TEAPOT" if you want output that matches the
-// format used for the InvenSense teapot demo
-//#define OUTPUT_TEAPOT
-
-
 
 #define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
 bool blinkState = false;
@@ -77,10 +44,11 @@ VectorInt16 aa;         // [x, y, z]            accel sensor measurements
 VectorInt16 aaReal;     // [x, y, z]            gravity-free accel sensor measurements
 VectorInt16 aaWorld;    // [x, y, z]            world-frame accel sensor measurements
 VectorFloat gravity;    // [x, y, z]            gravity vector
-float euler[3];         // [psi, theta, phi]    Euler angle container
 float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
+int gyro[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
 
-// CAM communication vars
+
+// CAN communication vars
 int8_t hiDir;
 int8_t loDir;
 int8_t hiX;
@@ -89,6 +57,15 @@ int8_t hiY;
 int8_t loY;
 int8_t hiZ;
 int8_t loZ;
+
+// ================================================================
+// ===               INTERRUPT DETECTION ROUTINE                ===
+// ================================================================
+
+volatile bool mpuInterrupt = false;     // indicates whether MPU interrupt pin has gone high
+void dmpDataReady() {
+    mpuInterrupt = true;
+}
 
 // ================================================================
 // ===                      INITIAL SETUP                       ===
@@ -145,11 +122,10 @@ void setup() {
         Serial.println(F("Enabling DMP..."));
         mpu.setDMPEnabled(true);
 
-// Removed Interputs
-//        // enable Arduino interrupt detection
-//        Serial.println(F("Enabling interrupt detection (Arduino external interrupt 0)..."));
-//        attachInterrupt(0, dmpDataReady, RISING);
-//        mpuIntStatus = mpu.getIntStatus();
+        // enable Arduino interrupt detection
+        Serial.println(F("Enabling interrupt detection (Arduino external interrupt 0)..."));
+        attachInterrupt(0, dmpDataReady, RISING);
+        mpuIntStatus = mpu.getIntStatus();
 
         // set our DMP Ready flag so the main loop() function knows it's okay to use it
         Serial.println(F("DMP ready! Waiting for first interrupt..."));
@@ -185,21 +161,18 @@ void loop() {
     if (!dmpReady) return;
 
     // wait for MPU interrupt or extra packet(s) available
-   // while (!mpuInterrupt && fifoCount < packetSize) {
+    while (!mpuInterrupt && fifoCount < packetSize) {
         // other program behavior stuff here
-        // .
-        // .
         // .
         // if you are really paranoid you can frequently test in between other
         // stuff to see if mpuInterrupt is true, and if so, "break;" from the
         // while() loop to immediately process the MPU data
         // .
-        // .
-        // .
-    //}
+        Serial.println("Waiting for MPU interrupt or extra packets");
+    }
 
     // reset interrupt flag and get INT_STATUS byte
-    //mpuInterrupt = false;
+    mpuInterrupt = false;
     mpuIntStatus = mpu.getIntStatus();
 
     // get current FIFO count
@@ -223,21 +196,30 @@ void loop() {
         // (this lets us immediately read more without waiting for an interrupt)
         fifoCount -= packetSize;
 
-        //OUTPUT_READABLE_YAWPITCHROLL
-        // display Euler angles in degrees
+        //Grab/Process Data
         mpu.dmpGetQuaternion(&q, fifoBuffer);
         mpu.dmpGetAccel(&aa, fifoBuffer);
+        mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
         mpu.dmpGetGravity(&gravity, &q);
         mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-//        Serial.print("ypr\t");
-//        Serial.print(ypr[0] * 180/M_PI);
-//        Serial.print("\t");
-//        Serial.print(ypr[1] * 180/M_PI);
-//        Serial.print("\t");
-//        Serial.println(ypr[2] * 180/M_PI);
-//        //separates value into two 8 bit sets for transmission by shifting the decimal point, typecasting as an integer, then shifting and ORing into 8bit int vars
-//        int8_t hiDir = ((((int) (ypr[2] * 100)) >> 8) & 0xff);
-//        int8_t loDir = ((((int) (ypr[2] * 100)) >> 0) & 0xff);
+        mpu.dmpGetGyro(gyro, fifoBuffer);
+
+        //Print Data to Serial bus (For Debuggin):
+        //FIFO buffer size counter
+        Serial.print(fifoCount);
+        Serial.print("\t");
+        Serial.print(mpu.getFullScaleAccelRange());
+        Serial.print("\t");
+        
+        //yaw (Direction)/pitch/roll
+        Serial.print(ypr[0] * 180/M_PI);
+        Serial.print(",\t");
+        Serial.print(ypr[1] * 180/M_PI);
+        Serial.print(",\t");
+        Serial.print(ypr[2] * 180/M_PI);
+        Serial.print("\t");
+
+        //Quaternerion Coordinates
         Serial.print(q.w);
         Serial.print(",\t");
         Serial.print(q.x);
@@ -246,23 +228,8 @@ void loop() {
         Serial.print(",\t");
         Serial.print(q.z);
         Serial.print("\t");
-        
-        //OUTPUT_READABLE_REALACCEL
-        // display real acceleration, adjusted to remove gravity
-        //mpu.dmpGetAccel(&aa, fifoBuffer);
-        mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
-//        Serial.print("areal\t");
-//        Serial.print(aaReal.x);
-//        hiX = ((((int) (aaReal.x)) >> 8) & 0xff);
-//        loX = ((((int) (aaReal.x)) >> 0) & 0xff);
-//        Serial.print("\t");
-//        Serial.print(aaReal.y);
-//        hiY = ((((int) (aaReal.y)) >> 8) & 0xff);
-//        loY = ((((int) (aaReal.y)) >> 0) & 0xff);
-//        Serial.print("\t");
-//        Serial.println(aaReal.z);
-//        hiZ = ((((int) (aaReal.z * 100)) >> 8) & 0xff);
-//        loZ = ((((int) (aaReal.z * 100)) >> 0) & 0xff);
+
+        //accelerations output (straight from MPU6050)
         Serial.print(aa.x);
         Serial.print(",\t");
         Serial.print(aa.y);
@@ -270,6 +237,7 @@ void loop() {
         Serial.print(aa.z);
         Serial.print("\t");
 
+        //gravity components (unit vector)
         Serial.print(gravity.x);
         Serial.print(",\t");
         Serial.print(gravity.y);
@@ -277,12 +245,39 @@ void loop() {
         Serial.print(gravity.z);
         Serial.print("\t");
 
+        //acceleartion with gravity removed
         Serial.print(aaReal.x);
         Serial.print(",\t");
         Serial.print(aaReal.y);
         Serial.print(",\t");
         Serial.print(aaReal.z);
         Serial.print("\n");
+        
+        //Prep data to send over CAN
+        map(ypr[0],-M_PI, M_PI, 0, 65535);
+        map(aaReal.x, -32768, 32768, 0, 65535);
+        map(aaReal.y, -32768, 32768, 0, 65535);
+        map(aaReal.z, -32768, 32768, 0, 65535);
+
+
+        //separates value into two 8 bit sets for transmission by typecasting as an integer and shifting and bitwise &ing into 8bit int vars
+        //break down Direction data
+        unsigned char hiDir = ((((int) (ypr[0])) >> 8) & 0xff);
+        unsigned char loDir = ((((int) (ypr[0])) >> 0) & 0xff);
+        //break down X data
+        unsigned char hiX = ((((unsigned int) (aaReal.x)) >> 8) & 0xff);
+        unsigned char loX = ((((unsigned int) (aaReal.x)) >> 0) & 0xff);
+        //break down Y data
+        unsigned char hiY = ((((unsigned int) (aaReal.y)) >> 8) & 0xff);
+        unsigned char loY = ((((unsigned int) (aaReal.y)) >> 0) & 0xff);
+        //break down Z data
+        unsigned char hiZ = ((((unsigned int) (aaReal.z)) >> 8) & 0xff);
+        unsigned char loZ = ((((unsigned int) (aaReal.z)) >> 0) & 0xff);
+
+        //Create package to send over CAN
+        unsigned char CANbuf[8] = {hiDir, loDir, hiX, loX, hiY, loY, hiZ, loZ};
+        //Send data over CAN
+        //CAN.sendMsgBuf(CAN_ID, 0, 8, CANbuf); //send out the package above to the bus and tell other devices this is a standard frame from 0x00.
 
         // blink LED to indicate activity
         blinkState = !blinkState;
