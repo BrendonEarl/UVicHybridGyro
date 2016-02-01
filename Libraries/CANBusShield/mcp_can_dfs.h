@@ -5,7 +5,6 @@
   Author:Loovee
   Contributor: Cory J. Fowler
   2014-1-16
-  
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -119,8 +118,8 @@
 #define MCP_RXF5SIDL    0x19
 #define MCP_RXF5EID8    0x1A
 #define MCP_RXF5EID0    0x1B
-#define MCP_TEC         0x1C
-#define MCP_REC         0x1D
+#define MCP_TEC            0x1C
+#define MCP_REC            0x1D
 #define MCP_RXM0SIDH    0x20
 #define MCP_RXM0SIDL    0x21
 #define MCP_RXM0EID8    0x22
@@ -132,8 +131,8 @@
 #define MCP_CNF3        0x28
 #define MCP_CNF2        0x29
 #define MCP_CNF1        0x2A
-#define MCP_CANINTE     0x2B
-#define MCP_CANINTF     0x2C
+#define MCP_CANINTE        0x2B
+#define MCP_CANINTF        0x2C
 #define MCP_EFLG        0x2D
 #define MCP_TXB0CTRL    0x30
 #define MCP_TXB1CTRL    0x40
@@ -150,7 +149,7 @@
 #define MCP_NO_INT          0x00                                    // Disable all interrupts
 
 #define MCP_TX01_MASK       0x14
-#define MCP_TX_MASK         0x54
+#define MCP_TX_MASK        0x54
 
 /*
  *   Define SPI Instruction Set
@@ -271,20 +270,6 @@
 #define MCP_16MHz_100kBPS_CFG2 (0xFA)
 #define MCP_16MHz_100kBPS_CFG3 (0x87)
 
-/*
-#define MCP_16MHz_100kBPS_CFG1 (0x03)
-#define MCP_16MHz_100kBPS_CFG2 (0xBA)
-#define MCP_16MHz_100kBPS_CFG3 (0x07)
-*/
-
-#define MCP_16MHz_95kBPS_CFG1 (0x03)
-#define MCP_16MHz_95kBPS_CFG2 (0xAD)
-#define MCP_16MHz_95kBPS_CFG3 (0x07)
-
-#define MCP_16MHz_83k3BPS_CFG1 (0x03)
-#define MCP_16MHz_83k3BPS_CFG2 (0xBE)
-#define MCP_16MHz_83k3BPS_CFG3 (0x07)
-
 #define MCP_16MHz_80kBPS_CFG1 (0x03)
 #define MCP_16MHz_80kBPS_CFG2 (0xFF)
 #define MCP_16MHz_80kBPS_CFG3 (0x87)
@@ -296,10 +281,6 @@
 #define MCP_16MHz_40kBPS_CFG1 (0x07)
 #define MCP_16MHz_40kBPS_CFG2 (0xFF)
 #define MCP_16MHz_40kBPS_CFG3 (0x87)
-
-#define MCP_16MHz_33kBPS_CFG1 (0x09)
-#define MCP_16MHz_33kBPS_CFG2 (0xBE)
-#define MCP_16MHz_33kBPS_CFG3 (0x07)
 
 #define MCP_16MHz_31k25BPS_CFG1 (0x0F)
 #define MCP_16MHz_31k25BPS_CFG2 (0xF1)
@@ -357,28 +338,25 @@
 #define CAN_10KBPS   2
 #define CAN_20KBPS   3
 #define CAN_31K25BPS 4
-#define CAN_33KBPS   5
-#define CAN_40KBPS   6
-#define CAN_50KBPS   7
-#define CAN_80KBPS   8
-#define CAN_83K3BPS  9
-#define CAN_95KBPS   10
-#define CAN_100KBPS  11
-#define CAN_125KBPS  12
-#define CAN_200KBPS  13
-#define CAN_250KBPS  14
-#define CAN_500KBPS  15
-#define CAN_1000KBPS 16
+#define CAN_40KBPS   5
+#define CAN_50KBPS   6
+#define CAN_80KBPS   7
+#define CAN_100KBPS  8
+#define CAN_125KBPS  9
+#define CAN_200KBPS  10
+#define CAN_250KBPS  11
+#define CAN_500KBPS  12
+#define CAN_1000KBPS 13
 
-#define CAN_OK                  (0)
-#define CAN_FAILINIT            (1)
-#define CAN_FAILTX              (2)
-#define CAN_MSGAVAIL            (3)
-#define CAN_NOMSG               (4)
-#define CAN_CTRLERROR           (5)
-#define CAN_GETTXBFTIMEOUT      (6)
-#define CAN_SENDMSGTIMEOUT      (7)
-#define CAN_FAIL                (0xff)
+#define CAN_OK         (0)
+#define CAN_FAILINIT   (1)
+#define CAN_FAILTX     (2)
+#define CAN_MSGAVAIL   (3)
+#define CAN_NOMSG      (4)
+#define CAN_CTRLERROR  (5)
+#define CAN_GETTXBFTIMEOUT (6)
+#define CAN_SENDMSGTIMEOUT (7)
+#define CAN_FAIL       (0xff)
 
 #define CAN_MAX_CHAR_IN_MESSAGE (8)
 
