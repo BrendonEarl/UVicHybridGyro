@@ -14,11 +14,17 @@
 // I2Cdev and MPU6050 must be installed as libraries, or else the .cpp/.h files
 // for both classes must be in the include path of your project
 
-#include <I2Cdev.h>     //I2C communication library
-#include <MPU6050_9Axis_MotionApps41.h>   //MPU6050 function library
-#include <mcp_can.h>    //CAN communication library
+#include "I2Cdev.h"     //I2C communication library
+#include "MPU6050_9Axis_MotionApps41.h"   //MPU6050 function library
+#include "mcp_can.h"    //CAN communication library
 
 #define CAN_ID 0x00
+
+// Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
+// is used in I2Cdev.h
+#if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
+    #include "Wire.h"
+#endif
 
 // class default I2C address is 0x68
 MPU6050 mpu;
@@ -45,7 +51,6 @@ VectorInt16 aaReal;     // [x, y, z]            gravity-free accel sensor measur
 VectorInt16 aaWorld;    // [x, y, z]            world-frame accel sensor measurements
 VectorFloat gravity;    // [x, y, z]            gravity vector
 float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
-int gyro[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
 
 
 // CAN communication vars
@@ -111,10 +116,12 @@ void setup() {
     devStatus = mpu.dmpInitialize();
 
     // supply your own gyro offsets here, scaled for min sensitivity
-    mpu.setXGyroOffset(0); //220
-    mpu.setYGyroOffset(0); //76
-    mpu.setZGyroOffset(0); //-85
-    mpu.setZAccelOffset(0); // 1688 factory default for my test chip
+    mpu.setXGyroOffset(220);
+    mpu.setYGyroOffset(76);
+    mpu.setZGyroOffset(-85);
+    mpu.setXAccelOffset(0);
+    mpu.setYAccelOffset(0);
+    mpu.setZAccelOffset(2188); // 1688 factory default for my test chip
 
     // make sure it worked (returns 0 if so)
     if (devStatus == 0) {
@@ -147,8 +154,8 @@ void setup() {
     pinMode(LED_PIN, OUTPUT);
 
     // set accelerometer sensitivity
-    mpu.setFullScaleAccelRange(1); // +- 4g
-    mpu.setFullScaleGyroRange(0); // 0 is default
+    //mpu.setFullScaleAccelRange(1); // +- 4g
+    //mpu.setFullScaleGyroRange(0); // 0 is default
 }
 
 
@@ -168,7 +175,7 @@ void loop() {
         // stuff to see if mpuInterrupt is true, and if so, "break;" from the
         // while() loop to immediately process the MPU data
         // .
-        Serial.println("Waiting for MPU interrupt or extra packets");
+        //Serial.println("Waiting for MPU interrupt or extra packets");
     }
 
     // reset interrupt flag and get INT_STATUS byte
@@ -202,7 +209,6 @@ void loop() {
         mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
         mpu.dmpGetGravity(&gravity, &q);
         mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-        mpu.dmpGetGyro(gyro, fifoBuffer);
 
         //Print Data to Serial bus (For Debuggin):
         //FIFO buffer size counter
