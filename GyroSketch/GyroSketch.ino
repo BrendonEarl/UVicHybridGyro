@@ -116,12 +116,12 @@ void setup() {
     devStatus = mpu.dmpInitialize();
 
     // supply your own gyro offsets here, scaled for min sensitivity
-    mpu.setXGyroOffset(220);
-    mpu.setYGyroOffset(76);
-    mpu.setZGyroOffset(-85);
-    mpu.setXAccelOffset(0);
-    mpu.setYAccelOffset(0);
-    mpu.setZAccelOffset(2188); // 1688 factory default for my test chip
+    mpu.setXAccelOffset(-2265);
+    mpu.setYAccelOffset(-585);
+    mpu.setZAccelOffset(2110);
+    mpu.setXGyroOffset(50);
+    mpu.setYGyroOffset(12);
+    mpu.setZGyroOffset(25);
 
     // make sure it worked (returns 0 if so)
     if (devStatus == 0) {
@@ -154,7 +154,7 @@ void setup() {
     pinMode(LED_PIN, OUTPUT);
 
     // set accelerometer sensitivity
-    //mpu.setFullScaleAccelRange(1); // +- 4g
+    mpu.setFullScaleAccelRange(1); // +- 4g
     //mpu.setFullScaleGyroRange(0); // 0 is default
 }
 
