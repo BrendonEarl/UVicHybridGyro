@@ -63,6 +63,8 @@ int8_t loY;
 int8_t hiZ;
 int8_t loZ;
 
+unsigned long lastTime = millis(); 
+
 // ================================================================
 // ===               INTERRUPT DETECTION ROUTINE                ===
 // ================================================================
@@ -280,8 +282,14 @@ void loop() {
 
         //Create package to send over CAN
         unsigned char CANbuf[8] = {hiDir, loDir, hiX, loX, hiY, loY, hiZ, loZ};
+
         //Send data over CAN
-        CAN.sendMsgBuf(CAN_ID, 0, 8, CANbuf); //send out the package above to the bus and tell other devices this is a standard frame from 0x00.
+        if (millis() - lastTime > 50) {
+          lastTime = millis();
+          CAN.sendMsgBuf(CAN_ID, 0, 8, CANbuf); //send out the package above to the bus and tell other devices this is a standard frame from 0x00.
+        } else {
+          Serial.println("No CAN message sent - time limit not exceded (this is okay)");
+        }
 
         // blink LED to indicate activity
         blinkState = !blinkState;
