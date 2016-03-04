@@ -18,7 +18,7 @@
 #include "MPU6050_9Axis_MotionApps41.h"   //MPU6050 function library
 #include "mcp_can.h"    //CAN communication library
 
-#define CAN_ID 0x00
+#define CAN_ID 0x150
 
 // Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
 // is used in I2Cdev.h
@@ -28,7 +28,7 @@
 
 // class default I2C address is 0x68
 MPU6050 mpu;
-//MCP_CAN CAN(9);
+MCP_CAN CAN(9);
 
 
 #define OUTPUT_READABLE_WORLDACCEL
@@ -105,12 +105,6 @@ void setup() {
     Serial.println(F("Testing device connections..."));
     Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
 
-    // wait for ready
-    Serial.println(F("\nSend any character to begin DMP programming and demo: "));
-    while (Serial.available() && Serial.read()); // empty buffer
-    while (!Serial.available());                 // wait for data
-    while (Serial.available() && Serial.read()); // empty buffer again
-
     // load and configure the DMP
     Serial.println(F("Initializing DMP..."));
     devStatus = mpu.dmpInitialize();
@@ -149,6 +143,10 @@ void setup() {
         Serial.print(devStatus);
         Serial.println(F(")"));
     }
+
+    // init can bus, baudrate: 500k
+    if(CAN.begin(CAN_500KBPS) == CAN_OK) Serial.print("can init ok!!\r\n");
+    else Serial.print("Can init fail!!\r\n");
 
     // configure LED for output
     pinMode(LED_PIN, OUTPUT);
@@ -218,11 +216,11 @@ void loop() {
         Serial.print("\t");
         
         //yaw (Direction)/pitch/roll
-        Serial.print(ypr[0] * 180/M_PI);
+        Serial.print(ypr[0]);
         Serial.print(",\t");
-        Serial.print(ypr[1] * 180/M_PI);
+        Serial.print(ypr[1]);
         Serial.print(",\t");
-        Serial.print(ypr[2] * 180/M_PI);
+        Serial.print(ypr[2]);
         Serial.print("\t");
 
         //Quaternerion Coordinates
@@ -260,16 +258,16 @@ void loop() {
         Serial.print("\n");
         
         //Prep data to send over CAN
-        map(ypr[0],-M_PI, M_PI, 0, 65535);
-        map(aaReal.x, -32768, 32768, 0, 65535);
-        map(aaReal.y, -32768, 32768, 0, 65535);
-        map(aaReal.z, -32768, 32768, 0, 65535);
+        ypr[0] = map(ypr[0]*100,-M_PI*100, M_PI*100, 0, 65535);
+        aaReal.x = map(aaReal.x, -32768, 32768, 0, 65535);
+        aaReal.y = map(aaReal.y, -32768, 32768, 0, 65535);
+        aaReal.z = map(aaReal.z, -32768, 32768, 0, 65535);
 
 
         //separates value into two 8 bit sets for transmission by typecasting as an integer and shifting and bitwise &ing into 8bit int vars
         //break down Direction data
-        unsigned char hiDir = ((((int) (ypr[0])) >> 8) & 0xff);
-        unsigned char loDir = ((((int) (ypr[0])) >> 0) & 0xff);
+        unsigned char hiDir = ((((unsigned int) (ypr[0])) >> 8) & 0xff);
+        unsigned char loDir = ((((unsigned int) (ypr[0])) >> 0) & 0xff);
         //break down X data
         unsigned char hiX = ((((unsigned int) (aaReal.x)) >> 8) & 0xff);
         unsigned char loX = ((((unsigned int) (aaReal.x)) >> 0) & 0xff);
@@ -283,7 +281,7 @@ void loop() {
         //Create package to send over CAN
         unsigned char CANbuf[8] = {hiDir, loDir, hiX, loX, hiY, loY, hiZ, loZ};
         //Send data over CAN
-        //CAN.sendMsgBuf(CAN_ID, 0, 8, CANbuf); //send out the package above to the bus and tell other devices this is a standard frame from 0x00.
+        CAN.sendMsgBuf(CAN_ID, 0, 8, CANbuf); //send out the package above to the bus and tell other devices this is a standard frame from 0x00.
 
         // blink LED to indicate activity
         blinkState = !blinkState;
