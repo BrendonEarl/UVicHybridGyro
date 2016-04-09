@@ -19,6 +19,7 @@
 #include "mcp_can.h"    //CAN communication library
 
 #define CAN_ID 0x150
+#define debug   //comment out to disable debug serial output
 
 // Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
 // is used in I2Cdev.h
@@ -210,54 +211,56 @@ void loop() {
         mpu.dmpGetGravity(&gravity, &q);
         mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
 
-        //Print Data to Serial bus (For Debuggin):
-        //FIFO buffer size counter
-        Serial.print(fifoCount);
-        Serial.print("\t");
-        Serial.print(mpu.getFullScaleAccelRange());
-        Serial.print("\t");
-        
-        //yaw (Direction)/pitch/roll
-        Serial.print(ypr[0]);
-        Serial.print(",\t");
-        Serial.print(ypr[1]);
-        Serial.print(",\t");
-        Serial.print(ypr[2]);
-        Serial.print("\t");
-
-        //Quaternerion Coordinates
-        Serial.print(q.w);
-        Serial.print(",\t");
-        Serial.print(q.x);
-        Serial.print(",\t");
-        Serial.print(q.y);
-        Serial.print(",\t");
-        Serial.print(q.z);
-        Serial.print("\t");
-
-        //accelerations output (straight from MPU6050)
-        Serial.print(aa.x);
-        Serial.print(",\t");
-        Serial.print(aa.y);
-        Serial.print(",\t");
-        Serial.print(aa.z);
-        Serial.print("\t");
-
-        //gravity components (unit vector)
-        Serial.print(gravity.x);
-        Serial.print(",\t");
-        Serial.print(gravity.y);
-        Serial.print(",\t");
-        Serial.print(gravity.z);
-        Serial.print("\t");
-
-        //acceleartion with gravity removed
-        Serial.print(aaReal.x);
-        Serial.print(",\t");
-        Serial.print(aaReal.y);
-        Serial.print(",\t");
-        Serial.print(aaReal.z);
-        Serial.print("\n");
+        #ifdef debug
+          //Print Data to Serial bus (For Debuggin):
+          //FIFO buffer size counter
+          Serial.print(fifoCount);
+          Serial.print("\t");
+          Serial.print(mpu.getFullScaleAccelRange());
+          Serial.print("\t");
+          
+          //yaw (Direction)/pitch/roll
+          Serial.print(ypr[0]);
+          Serial.print(",\t");
+          Serial.print(ypr[1]);
+          Serial.print(",\t");
+          Serial.print(ypr[2]);
+          Serial.print("\t");
+  
+          //Quaternerion Coordinates
+          Serial.print(q.w);
+          Serial.print(",\t");
+          Serial.print(q.x);
+          Serial.print(",\t");
+          Serial.print(q.y);
+          Serial.print(",\t");
+          Serial.print(q.z);
+          Serial.print("\t");
+  
+          //accelerations output (straight from MPU6050)
+          Serial.print(aa.x);
+          Serial.print(",\t");
+          Serial.print(aa.y);
+          Serial.print(",\t");
+          Serial.print(aa.z);
+          Serial.print("\t");
+  
+          //gravity components (unit vector)
+          Serial.print(gravity.x);
+          Serial.print(",\t");
+          Serial.print(gravity.y);
+          Serial.print(",\t");
+          Serial.print(gravity.z);
+          Serial.print("\t");
+  
+          //acceleartion with gravity removed
+          Serial.print(aaReal.x);
+          Serial.print(",\t");
+          Serial.print(aaReal.y);
+          Serial.print(",\t");
+          Serial.print(aaReal.z);
+          Serial.print("\n");
+        #endif
         
         //Prep data to send over CAN
         ypr[0] = map(ypr[0]*100,-M_PI*100, M_PI*100, 0, 65535);
